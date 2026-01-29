@@ -4,6 +4,13 @@
 # This scripts downloads and installs necessary files and 
 # assumes that user has git and codna installed. 
 
+set -e
+set -u
+set -o pipefail
+
+# Initialize conda for this script
+eval "$(conda shell.bash hook)"
+
 # git clone hic.py repo from phase genomics 
 git clone https://github.com/phasegenomics/hic_qc.git
 cd hic_qc/
@@ -13,13 +20,12 @@ conda install conda-forge::wkhtmltopdf
 pip install --no-deps -e .
 conda deactivate
 
-
-# install conda environment
+# Install conda environment
 conda env create --file env-hic-tools.yaml
-mkdir data
-mkdir references
 
-#make script executable 
-chmod +x batch_hic_pipeline.sh
-chmod +x hic_pipeline.sh
+# Create directories
+mkdir -p data
+mkdir -p references
 
+# Make scripts executable
+chmod +x batch_hic_pipeline.sh hic_pipeline.sh
