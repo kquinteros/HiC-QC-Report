@@ -11,7 +11,7 @@ Simple bash scripts to run Hi-C QC pipeline.
 
 ## Dependencies 
 
-This script is depends on following tools: bwa, samtools, samblaster, and fastp. 
+This script is dependent on the following tools: bwa, samtools, samblaster, and fastp. 
 The `hic_qc.py` script by Phase genomics has additional dependencies, so please check their [git repo page](https://github.com/phasegenomics/hic_qc/tree/master) for more information.
 
 We have written a set up script that tries to install all dependencies and sets up your directory for running this pipeline. Just run the below commands in the following order. We assume you have git and conda installed. 
