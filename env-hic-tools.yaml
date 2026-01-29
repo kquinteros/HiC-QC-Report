@@ -1,0 +1,10 @@
+name: hic_tools
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - samtools
+  - fastp
+  - bwa
+  - samblaster

@@ -1,0 +1,11 @@
+# Sample configuration file for batch Hi-C QC pipeline
+# Format: sample_name  reference_genome  R1_fastq  R2_fastq
+# Lines starting with # are ignored
+# Fields are tab-separated
+
+# Example entries:
+sample1	references/genome1.fasta	data/sample1.r1.fq.gz	data/sample1.r2.fq.gz
+sample2	references/genome1.fasta	data/sample2.r1.fq.gz	data/sample2.r2.fq.gz
+sample3	references/genome2.fasta	data/sample3.r1.fq.gz	data/sample3.r2.fq.gz
+
+
