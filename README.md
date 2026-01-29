@@ -11,10 +11,10 @@ Simple bash scripts to run Hi-C QC pipeline.
 
 ## Dependencies 
 
-This script is depend on the bwa, samtools, samblaster, and fastp. 
-The hic_qc script by Phase genomics has additional dependencis, so please check their [git repo](https://github.com/phasegenomics/hic_qc/tree/master)for more information 
+This script is depends on following tools: bwa, samtools, samblaster, and fastp. 
+The `hic_qc.py` script by Phase genomics has additional dependencies, so please check their [git repo page](https://github.com/phasegenomics/hic_qc/tree/master) for more information.
 
-We have written a set up script that tries to install all dependency and sets up your directory for running this pipeline. Just run commands in the following order. We assume you have git and conda installed.
+We have written a set up script that tries to install all dependencies and sets up your directory for running this pipeline. Just run the below commands in the following order. We assume you have git and conda installed. 
 
 ```bash
 git clone https://github.com/kquinteros/HiC-QC-Report.git
@@ -68,7 +68,8 @@ logs/
 
 ## Configuration
 
-optional parameters can be passed to change the number of threads and number of reads to sample for QC. 
+You can specify the number of threads and reads to sample for QC by passing optional parameters to hic_pipeline.sh.
+
 - `THREADS=8` - Number of CPU threads
 - `HIC_QC_READS=1000000` - Number of reads to sample for QC
 

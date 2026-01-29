@@ -16,7 +16,10 @@ conda deactivate
 
 # install conda environment
 conda env create --file env-hic-tools.yaml
+mkdir data
+mkdir references
 
 #make script executable 
 chmod +x batch_hic_pipeline.sh
 chmod +x hic_pipeline.sh
+

@@ -81,10 +81,6 @@ bwa mem -t "$THREADS" -M "$REFERENCE" "$TRIMMED_R1" "$TRIMMED_R2" | \
     samtools view -Sb - > "$BAM" 2>> "logs/bwa_mem_${SAMPLE}.log"
 echo "[$(date)] Alignment complete"
 
-# Clean up trimmed files
-echo "[$(date)] Cleaning up trimmed files..."
-rm -f "$TRIMMED_R1" "$TRIMMED_R2"
-
 # Step 4: Run Hi-C QC
 echo "[$(date)] Step 4: Running Hi-C QC..."
 conda run -n hic_qc python hic_qc/hic_qc.py \
