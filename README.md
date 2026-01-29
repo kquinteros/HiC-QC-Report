@@ -75,7 +75,6 @@ You can specify the number of threads and reads to sample for QC by passing opti
 
 ## Notes
 
-- Trimmed FASTQ files are automatically deleted after alignment
 - Reference genome is indexed once and reused
 - All logs saved to `logs/` directory
 - Fastp QC reports in `qc/fastp/`
