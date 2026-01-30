@@ -53,7 +53,7 @@ echo "========================================"
 # Step 1: Index reference genome if not already indexed
 echo "[$(date)] Step 1: Indexing reference genome..."
 if [ ! -f "${REFERENCE}.bwt" ]; then
-    bwa index "$REFERENCE" 2>&1 | tee "logs/bwa_index_${REF_NAME}.log"
+    conda run -n hic_tools bwa index "$REFERENCE" 2>&1 | tee "logs/bwa_index_${REF_NAME}.log"
     echo "[$(date)] Indexing complete"
 else
     echo "[$(date)] Index already exists, skipping..."
