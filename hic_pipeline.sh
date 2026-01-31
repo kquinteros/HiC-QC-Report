@@ -6,8 +6,27 @@
 set -e  # Exit on error
 set -u  # Exit on undefined variable
 set -o pipefail  # Exit on pipe failure
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ----------------------------
+# Resolve script directory safely
+# ----------------------------
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+else
+    echo "ERROR: Cannot determine script directory. Run the script as a file, not via stdin." >&2
+    echo "Use: ./hic_pipeline.sh or bash hic_pipeline.sh" >&2
+    exit 1
+fi
+
+# ----------------------------
+# Required files
+# ----------------------------
+HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc/hic_qc.py"
+THRESHOLDS_JSON="$SCRIPT_DIR/hic_qc/collateral/thresholds.json"
+
+# ----------------------------
+# Check arguments
+# ----------------------------
 # Check arguments (now 4, 5, OR 6 are acceptable)
 if [[ "$#" -lt 4 || "$#" -gt 6 ]]; then
     echo "Usage: $0 <sample> <reference.fa> <r1.fq.gz> <r2.fq.gz> [threads] [hic_qc_reads]" >&2
@@ -24,18 +43,7 @@ REFERENCE=$2
 R1=$3
 R2=$4
 THREADS=${5:-8}              # Default: 8 threads
-HIC_QC_READS=${6:-1000000}   # Default: 1
-JSON="hic_qc/collateral/thresholds.json"
-
-# ----------------------------
-# Required files
-# ----------------------------
-HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc/hic_qc.py"
-THRESHOLDS_JSON="$SCRIPT_DIR/hic_qc/collateral/thresholds.json"
-
-for f in "$REFERENCE" "$R1" "$R2" "$HIC_QC_SCRIPT" "$THRESHOLDS_JSON"; do
-    [[ -f "$f" ]] || { echo "ERROR: File not found: $f" >&2; exit 1; }
-done
+HIC_QC_READS=${6:-1000000}   # Default: 1000000
 
 # Derived variables
 REF_NAME=$(basename "$REFERENCE" | sed 's/\.[^.]*$//')
@@ -44,19 +52,14 @@ TRIMMED_R1="trimmed/${SAMPLE}.r1.trimmed.fq.gz"
 TRIMMED_R2="trimmed/${SAMPLE}.r2.trimmed.fq.gz"
 BAM="${OUTDIR}/${SAMPLE}.bam"
 
+
+#check that required file exist
+for f in "$REFERENCE" "$R1" "$R2" "$HIC_QC_SCRIPT" "$THRESHOLDS_JSON"; do
+    [[ -f "$f" ]] || { echo "ERROR: File not found: $f" >&2; exit 1; }
+done
+
 # Create output directories
 mkdir -p "$OUTDIR" trimmed qc/fastp logs
-
-# ----------------------------
-# Version logging
-# ----------------------------
-{
-    echo "Pipeline started: $(date)"
-    bwa 2>&1 | head -n1
-    samtools --version | head -n1
-    fastp --version
-    python --version
-} > "logs/versions_${SAMPLE}.log"
 
 echo "========================================"
 echo "Hi-C QC Pipeline"
