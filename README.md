@@ -21,9 +21,10 @@ A Conda YAML file is provided to create an environment with the required package
 
 
 ```bash
-git clone https://github.com/phasegenomics/
+git clone https://github.com/phasegenomics/hic_qc.git
 conda env create -f env-hic-tools.yaml
 conda activate hic_tools
+cd hic_qc
 pip install --no-deps -e .
 chmod +x batch_hic_pipeline.sh hic_pipeline.sh
 ```
