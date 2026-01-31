@@ -1,18 +1,16 @@
 #!/bin/bash
-
+# Author: Kevin Quinteros
 # Hi-C QC Pipeline Bash Script
-# Usage: ./hic_pipeline.sh <sample_name> <reference_genome> <r1_fastq> <r2_fastq> <
+# Usage: ./hic_pipeline.sh <sample_name> <reference_genome> <r1_fastq> <r2_fastq> 
 
 set -e  # Exit on error
 set -u  # Exit on undefined variable
 set -o pipefail  # Exit on pipe failure
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Check arguments (now 4, 5, OR 6 are acceptable)
-if [ "$#" -lt 4 ] || [ "$#" -gt 6 ]; then
-    echo "Usage: $0 <sample_name> <reference_genome> <r1_fastq> <r2_fastq> [threads] [hic_qc_reads]"
-    echo "Example: $0 sample1 genome.fasta sample1_R1.fq.gz sample1_R2.fq.gz"
-    echo "Example: $0 sample1 genome.fasta sample1_R1.fq.gz sample1_R2.fq.gz 16"
-    echo "Example: $0 sample1 genome.fasta sample1_R1.fq.gz sample1_R2.fq.gz 16 2000000"
+if [[ "$#" -lt 4 || "$#" -gt 6 ]]; then
+    echo "Usage: $0 <sample> <reference.fa> <r1.fq.gz> <r2.fq.gz> [threads] [hic_qc_reads]" >&2
     echo ""
     echo "Defaults:"
     echo "  threads: 8"
@@ -29,6 +27,16 @@ THREADS=${5:-8}              # Default: 8 threads
 HIC_QC_READS=${6:-1000000}   # Default: 1
 JSON="hic_qc/collateral/thresholds.json"
 
+# ----------------------------
+# Required files
+# ----------------------------
+HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc/hic_qc.py"
+THRESHOLDS_JSON="$SCRIPT_DIR/hic_qc/collateral/thresholds.json"
+
+for f in "$REFERENCE" "$R1" "$R2" "$HIC_QC_SCRIPT" "$THRESHOLDS_JSON"; do
+    [[ -f "$f" ]] || { echo "ERROR: File not found: $f" >&2; exit 1; }
+done
+
 # Derived variables
 REF_NAME=$(basename "$REFERENCE" | sed 's/\.[^.]*$//')
 OUTDIR="results/${REF_NAME}/${SAMPLE}"
@@ -37,10 +45,18 @@ TRIMMED_R2="trimmed/${SAMPLE}.r2.trimmed.fq.gz"
 BAM="${OUTDIR}/${SAMPLE}.bam"
 
 # Create output directories
-mkdir -p "$OUTDIR"
-mkdir -p trimmed
-mkdir -p qc/fastp
-mkdir -p logs
+mkdir -p "$OUTDIR" trimmed qc/fastp logs
+
+# ----------------------------
+# Version logging
+# ----------------------------
+{
+    echo "Pipeline started: $(date)"
+    bwa 2>&1 | head -n1
+    samtools --version | head -n1
+    fastp --version
+    python --version
+} > "logs/versions_${SAMPLE}.log"
 
 echo "========================================"
 echo "Hi-C QC Pipeline"
@@ -53,7 +69,7 @@ echo "========================================"
 # Step 1: Index reference genome if not already indexed
 echo "[$(date)] Step 1: Indexing reference genome..."
 if [ ! -f "${REFERENCE}.bwt" ]; then
-    conda run -n hic_tools bwa index "$REFERENCE" 2>&1 | tee "logs/bwa_index_${REF_NAME}.log"
+    bwa index "$REFERENCE" 2>&1 | tee "logs/bwa_index_${REF_NAME}.log"
     echo "[$(date)] Indexing complete"
 else
     echo "[$(date)] Index already exists, skipping..."
@@ -61,7 +77,7 @@ fi
 
 # Step 2: Trim adapters with fastp
 echo "[$(date)] Step 2: Trimming adapters with fastp..."
-conda run -n hic_tools fastp \
+fastp \
     -i "$R1" \
     -I "$R2" \
     -o "$TRIMMED_R1" \
@@ -75,23 +91,27 @@ echo "[$(date)] Adapter trimming complete"
 
 # Step 3: Align with BWA-MEM, mark duplicates with samblaster, convert to BAM
 echo "[$(date)] Step 3: Aligning reads with BWA-MEM + samblaster..."
-conda run -n hic_tools \
 bwa mem -t "$THREADS" -M "$REFERENCE" "$TRIMMED_R1" "$TRIMMED_R2" | \
     samblaster 2>> "logs/samblaster_${SAMPLE}.log" | \
     samtools view -Sb - > "$BAM" 2>> "logs/bwa_mem_${SAMPLE}.log"
 echo "[$(date)] Alignment complete"
 
 # Step 4: Run Hi-C QC
-echo "[$(date)] Step 4: Running Hi-C QC..."
-conda run -n hic_qc python hic_qc/hic_qc.py \
+echo "[$(date)] Step 4: Running Hi-C QC..." 
+python "$HIC_QC_SCRIPT" \
     -b "$BAM" \
     -n "$HIC_QC_READS" \
     -o "${OUTDIR}/${SAMPLE}" \
-    --thresholds "${JSON}" \
+    --thresholds "$THRESHOLDS_JSON" \
     --sample_type genome \
     -r \
     2>&1 | tee "logs/hic_qc_${SAMPLE}.log"
 echo "[$(date)] Hi-C QC complete"
+
+
+# ----------------------------
+# Done
+# ----------------------------
 
 echo "========================================"
 echo "[$(date)] Pipeline complete!"
