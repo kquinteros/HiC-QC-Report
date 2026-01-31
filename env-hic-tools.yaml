@@ -8,3 +8,11 @@ dependencies:
   - fastp
   - bwa
   - samblaster
+  - wkhtmltopdf
+  - markdown
+  - matplotlib
+  - numpy
+  - python-pdfkit
+  - pysam
+  - python=3.12
+  - scipy
