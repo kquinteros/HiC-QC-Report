@@ -8,7 +8,6 @@ dependencies:
   - fastp
   - bwa
   - samblaster
-  - wkhtmltopdf
   - markdown
   - matplotlib
   - numpy
