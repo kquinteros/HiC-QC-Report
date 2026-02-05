@@ -1,9 +1,10 @@
 name: hic_tools
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
+  - python=3.12
   - samtools
   - fastp
   - bwa
@@ -13,5 +14,5 @@ dependencies:
   - numpy
   - python-pdfkit
   - pysam
-  - python=3.12
   - scipy
+  - wkhtmltopdf
