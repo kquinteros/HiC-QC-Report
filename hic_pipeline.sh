@@ -21,7 +21,7 @@ fi
 # ----------------------------
 # Required files
 # ----------------------------
-HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc/hic_qc.py"
+HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc.hic_qc"
 THRESHOLDS_JSON="$SCRIPT_DIR/hic_qc/collateral/thresholds.json"
 
 # ----------------------------
@@ -101,7 +101,7 @@ echo "[$(date)] Alignment complete"
 
 # Step 4: Run Hi-C QC
 echo "[$(date)] Step 4: Running Hi-C QC..." 
-python "$HIC_QC_SCRIPT" \
+python -m "$HIC_QC_SCRIPT" \
     -b "$BAM" \
     -n "$HIC_QC_READS" \
     -o "${OUTDIR}/${SAMPLE}" \
