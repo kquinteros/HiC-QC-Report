@@ -25,8 +25,7 @@ git clone https://github.com/phasegenomics/hic_qc.git
 conda env create -f env-hic-tools.yaml
 conda activate hic_tools
 conda install conda-forge::wkhtmltopdf
-cd hic_qc
-pip install --no-deps -e .
+pip install --no-deps -e hic_qc
 chmod +x batch_hic_pipeline.sh hic_pipeline.sh
 ```
 
