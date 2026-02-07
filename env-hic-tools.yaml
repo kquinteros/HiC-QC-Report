@@ -15,5 +15,6 @@ dependencies:
   - pysam
   - python=3.12
   - scipy
+  - wkhtmltopdf
   - pandoc
   - weasyprint
