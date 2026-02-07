@@ -21,7 +21,9 @@ fi
 # ----------------------------
 # Required files
 # ----------------------------
-HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc.hic_qc"
+HIC_QC_SCRIPT="$SCRIPT_DIR/hic_qc/hic_qc.py"
+
+#You can pass your own Threshold values by editinng this JSON file
 THRESHOLDS_JSON="$SCRIPT_DIR/hic_qc/collateral/thresholds.json"
 
 # ----------------------------
@@ -79,38 +81,90 @@ else
 fi
 
 # Step 2: Trim adapters with fastp
+FASTP_LOG="logs/fastp_${SAMPLE}.log"
+FASTP_HTML="qc/fastp/${SAMPLE}.html"
+FASTP_JSON="qc/fastp/${SAMPLE}.json"
+
 echo "[$(date)] Step 2: Trimming adapters with fastp..."
-fastp \
-    -i "$R1" \
-    -I "$R2" \
-    -o "$TRIMMED_R1" \
-    -O "$TRIMMED_R2" \
-    --thread "$THREADS" \
-    --detect_adapter_for_pe \
-    --html "qc/fastp/${SAMPLE}.html" \
-    --json "qc/fastp/${SAMPLE}.json" \
-    2>&1 | tee "logs/fastp_${SAMPLE}.log"
-echo "[$(date)] Adapter trimming complete"
+if [[ -s "$TRIMMED_R1" && -s "$TRIMMED_R2" && -s "$FASTP_HTML" && -s "$FASTP_JSON" && -s "$FASTP_LOG" ]]; then
+    echo "[$(date)] fastp outputs + log exist, skipping..."
+else
+    fastp \
+        -i "$R1" \
+        -I "$R2" \
+        -o "$TRIMMED_R1" \
+        -O "$TRIMMED_R2" \
+        --thread "$THREADS" \
+        --detect_adapter_for_pe \
+        --html "$FASTP_HTML" \
+        --json "$FASTP_JSON" \
+        2>&1 | tee "$FASTP_LOG"
+    echo "[$(date)] Adapter trimming complete"
+fi
 
 # Step 3: Align with BWA-MEM, mark duplicates with samblaster, convert to BAM
+BWA_LOG="logs/bwa_mem_${SAMPLE}.log"
+SBL_LOG="logs/samblaster_${SAMPLE}.log"
+
 echo "[$(date)] Step 3: Aligning reads with BWA-MEM + samblaster..."
-bwa mem -t "$THREADS" -M "$REFERENCE" "$TRIMMED_R1" "$TRIMMED_R2" | \
-    samblaster 2>> "logs/samblaster_${SAMPLE}.log" | \
-    samtools view -Sb - > "$BAM" 2>> "logs/bwa_mem_${SAMPLE}.log"
-echo "[$(date)] Alignment complete"
+if [[ -s "$BAM" && -s "$BWA_LOG" && -s "$SBL_LOG" ]]; then
+    echo "[$(date)] BAM + logs exist, skipping alignment..."
+else
+    bwa mem -t "$THREADS" -M "$REFERENCE" "$TRIMMED_R1" "$TRIMMED_R2" | \
+        samblaster 2>> "$SBL_LOG" | \
+        samtools view -Sb - > "$BAM" 2>> "$BWA_LOG"
+    echo "[$(date)] Alignment complete"
+fi
 
 # Step 4: Run Hi-C QC
 echo "[$(date)] Step 4: Running Hi-C QC..." 
-python -m "$HIC_QC_SCRIPT" \
+
+ln -s "$(pwd)/hic_qc/collateral" "results/${REF_NAME}/${SAMPLE}/collateral"
+
+python "$HIC_QC_SCRIPT" \
     -b "$BAM" \
     -n "$HIC_QC_READS" \
     -o "${OUTDIR}/${SAMPLE}" \
     --thresholds "$THRESHOLDS_JSON" \
     --sample_type genome \
-    -r \
     2>&1 | tee "logs/hic_qc_${SAMPLE}.log"
 echo "[$(date)] Hi-C QC complete"
 
+
+# Step 5: De-absolute report paths + convert to PDF with pandoc
+echo "[$(date)] Step 5: Cleaning report paths and converting to PDF with pandoc..."
+
+# Input report produced by HiC-QC (adjust if your filename differs)
+REPORT_IN="${OUTDIR}/${SAMPLE}_qc_report.html"
+REPORT_CLEAN_MD="${OUTDIR}/${SAMPLE}_qc_report.cleaned.md"
+REPORT_PDF="${OUTDIR}/${SAMPLE}_qc_report.pandoc.pdf"
+
+[[ -f "$REPORT_IN" ]] || {
+  echo "ERROR: Report not found: $REPORT_IN" >&2
+  echo "Adjust REPORT_IN in the script to match your HiC-QC output name." >&2
+  exit 1
+}
+
+# Prefixes to remove
+PREFIX1="${PWD}/hic_qc/"
+PREFIX2="${PWD}/results/${REF_NAME}/${SAMPLE}/"
+
+# Remove the prefixes everywhere in the report text
+sed -e "s|${PREFIX1}||g" \
+    -e "s|${PREFIX2}||g" \
+    "$REPORT_IN" > "$REPORT_CLEAN_MD"
+
+# Convert cleaned markdown-ish file to PDF
+command -v pandoc >/dev/null 2>&1 || { echo "ERROR: pandoc not found in PATH" >&2; exit 1; }
+
+pandoc "$REPORT_CLEAN_MD" \
+  -o "$REPORT_PDF" \
+  --resource-path=".:${OUTDIR}" \
+  --css "${OUTDIR}/collateral/style.css" \
+  --pdf-engine weasyprint
+
+echo "[$(date)] Report cleaned: $REPORT_CLEAN_MD"
+echo "[$(date)] Pandoc PDF written: $REPORT_PDF"
 
 # ----------------------------
 # Done
