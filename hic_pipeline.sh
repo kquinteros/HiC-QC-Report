@@ -163,6 +163,9 @@ pandoc "$REPORT_CLEAN_MD" \
   --css "${OUTDIR}/collateral/style.css" \
   --pdf-engine weasyprint
 
+#remove original pdf
+rm -rf "${OUTDIR}/${SAMPLE}_qc_report.pdf"
+
 echo "[$(date)] Report cleaned: $REPORT_CLEAN_MD"
 echo "[$(date)] Pandoc PDF written: $REPORT_PDF"
 
